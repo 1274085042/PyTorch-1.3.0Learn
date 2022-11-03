@@ -61,6 +61,18 @@ using ConstQuantizerPtr = const c10::intrusive_ptr<Quantizer>&;
 //
 // Note that Tensor can also be NULL, i.e. it is not associated with any underlying TensorImpl, and
 // special care must be taken to handle this.
+/*
+ Tensor是一个通用对象，它有一个指针指向底层的TensorImpl对象，该对象有一个引用计数，这样的话，Tensor类似于boost::intrusive_ptr
+
+ void func(Tensor a) {
+   Tensor b = a;
+   ...
+ }
+  在这个例子中，Tensor b = a，创建一个新的对象指向相同的底层TensorImpl，并增加引用计数，当b的作用域结束时，
+  析构函数通过调用TensorImpl上的release()来减少引用计数
+
+  注意：Tensor也可以为NULL，它不会关联任何底层的TensorImpl
+*/
 class CAFFE2_API Tensor {
  public:
   Tensor(){};

@@ -223,35 +223,48 @@ struct C10_API VariableVersion {
  * The low-level representation of a tensor, which contains a pointer
  * to a storage (which contains the actual data) and metadata (e.g., sizes and
  * strides) describing this particular view of the data as a tensor.
- *
+ * 张量的低级表示，它包含了指向storage（包含实际的数据）的指针和metadata（sizes和strides）
+ * 
  * Some basic characteristics about our in-memory representation of
  * tensors:
+ * 在内存中表示张量的一些基本特征:
  *
  *  - It contains a pointer to a storage struct (Storage/StorageImpl)
  *    which contains the pointer to the actual data and records the
  *    data type and device of the view.  This allows multiple tensors
  *    to alias the same underlying data, which allows to efficiently
  *    implement differing *views* on a tensor.
+ *    包含一个指向storage结构的指针，该结构包含指向实际数据的指针还有记录视图的数据类型和
+ *    设备。这允许一个底层数据有多个tensor，在一个tensor上有效的实现了不同的*view*
  *
  *  - The tensor struct itself records view-specific metadata about
  *    the tensor, e.g., sizes, strides and offset into storage.
  *    Each view of a storage can have a different size or offset.
+ *    tensor记录了视图的metadata，包括sizes、strides和存储偏移量
+ *    storage的每个视图都可以有不同的size和offset
  *
  *  - This class is intrusively refcounted.  It is refcounted so that
  *    we can support prompt deallocation of large tensors; it is
  *    intrusively refcounted so that we can still perform reference
  *    counted operations on raw pointers, which is often more convenient
  *    when passing tensors across language boundaries.
+ *    该类是侵入式引用计数。侵入式引用计数可以支持大张量的快速释放，
+ *    侵入式引用计数使我们仍然可以在raw pointer上执行引用计数操作，这在跨语言传递张量时
+ *    通常更方便
  *
  *  - For backwards-compatibility reasons, a tensor may be in an
  *    uninitialized state.  A tensor may be uninitialized in the following
  *    two ways:
+ *    由于后向兼容，tensor可能是未初始化的状态，张量可以通过以下两种方式未初始化
  *
  *      - A tensor may be DTYPE UNINITIALIZED.  A tensor of this
  *        form has an uninitialized dtype.  This situation most
  *        frequently arises when a user writes Tensor x(CPU).  The dtype and
  *        is subsequently initialized when mutable_data<T>() is
  *        invoked for the first time.
+ *        张量可能是DTYPE UNINITIALIZED。这种形式的张量有一个未初始化的dtype。
+ *        这种情形经常出现在用户编写Tensor x(CPU)时。当mutable_data<T>()第一次
+ *        调用时dtype随后被初始化。
  *
  *      - A tensor may be STORAGE UNINITIALIZED.  A tensor of this form
  *        has non-zero size, but has a storage with a null data pointer.
@@ -261,9 +274,14 @@ struct C10_API VariableVersion {
  *        mutable_data<T>() is invoked.  A tensor with zero size is
  *        always storage initialized, because no allocation is necessary
  *        in this case.
+ *        张量可能是STORAGE UNINITIALIZED。这种张量具有非0的size，但是有空数据指针
+ *        的storage，这种情形经常出现在用户调用Resize()或FreeMemory()，这是因为Caffe2
+ *        历来使用惰性分配：在mutable_data<T>()被调用之前不会发生数据的分配，size为0的
+ *        Tensor storage总是被初始化的，因为在这种情况下不需要分配
  *
  *    All combinations of these two uninitialized states are possible.
  *    Consider the following transcript in idiomatic Caffe2 API:
+ *    这两种未初始化状态的组合式可能的，如下Caffe2 API脚本
  *
  *      Tensor x(CPU); // x is storage-initialized, dtype-UNINITIALIZED
  *      x.Resize(4); // x is storage-UNINITIALIZED, dtype-UNINITIALIZED
@@ -274,22 +292,32 @@ struct C10_API VariableVersion {
  *    size is always valid. (Historically, a tensor declared as Tensor x(CPU)
  *    also had uninitialized size, encoded as numel == -1, but we have now
  *    decided to default to zero size, resulting in numel == 0).
+ *    张量的其它字段总是被初始化的，特别是，size总是有效的（以前当Tensor x(CPU)声明时，
+ *    它有未初始化的size，numel == -1，现在默认size为0，numel == 0）
  *
  *    Uninitialized storages MUST be uniquely owned, to keep our model
  *    simple.  Thus, we will reject operations which could cause an
  *    uninitialized storage to become shared (or a shared storage to
  *    become uninitialized, e.g., from FreeMemory).
+ *    未初始化的storage必须是唯一的，以保持我们模型的简单。因此我们拒绝将未初始化的
+ *    storage变为共享的操作（或者共享storage变为未初始化的状态，例如，FreeMemory()）
  *
  *    In practice, tensors which are storage-UNINITIALIZED and
  *    dtype-UNINITIALIZED are *extremely* ephemeral: essentially,
  *    after you do a Resize(), you basically always call mutable_data()
  *    immediately afterwards.  Most functions are not designed to
  *    work if given a storage-UNINITIALIZED, dtype-UNINITIALIZED tensor.
- *
+ *    实际上，storage-UNINITIALIZED和dtype-UNINITIALIZED的张量是非常短暂的，
+ *    当你调用Resize()后，mutable_data()立即被调用，若果给一个storage_UNINITIALIZED、
+ *    dtype-UNINITIALIZED tensor大部分函数无法正常工作
+ *    
  *    We intend to eliminate all uninitialized states, so that every
  *    tensor is fully initialized in all fields.  Please do not write new code
  *    that depends on these uninitialized states.
+ *    我们试图消除所有未初始化状态，以便每个张量在所有字段都被初始化，请不要写依赖这些未初始化的状态
+ *    的新代码
  */
+
 struct C10_API TensorImpl : public c10::intrusive_ptr_target {
   TensorImpl() = delete;
 
