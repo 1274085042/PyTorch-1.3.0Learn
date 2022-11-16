@@ -599,9 +599,10 @@ struct C10_API TensorImpl : public c10::intrusive_ptr_target {
    * Return a typed data pointer to the actual data which this tensor refers to.
    * This checks that the requested type (from the template parameter) matches
    * the internal type of the tensor.
-   *
+   * 返回一个该张量引用的实际数据的指针
    * It is invalid to call data() on a dtype-uninitialized tensor, even if
    * the size is 0.
+   * 在一个dtype-uninitialized未初始化的张量上调用data()是无效的，即使它的size是0
    *
    * WARNING: If a tensor is not contiguous, you MUST use strides when
    * performing index calculations to determine the location of elements in

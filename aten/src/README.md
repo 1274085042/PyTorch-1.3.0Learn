@@ -1,5 +1,6 @@
 This directory contains the low-level tensor libraries for PyTorch,
 as well as the new ATen C++ bindings.
+该目录包含PyTorch低级张量库
 
 The low-level libraries trace their lineage from the original Torch.  There are
 multiple variants of the library, summarized here:
@@ -18,16 +19,21 @@ multiple variants of the library, summarized here:
 PyTorch employs reference counting in order to permit tensors to provide
 differing views on a common underlying storage.  For example, when you call
 view() on a Tensor, a new THTensor is allocated with differing dimensions,
-but it shares the same THStorage with the original tensor.
+but it shares the same THStorage with the original tensor.  
+PyTorch使用引用计数允许张量在同一个底层存储上提供不同的视图，例如，在一个Tensor上调用view()，新的THTensor分配了不同的维度，但是它和原来的tensor共享THStorage
 
 Unfortunately, this means we are in the business of manually tracking reference
 counts inside our C library code.  Fortunately, for most of our library code implementing
-tensor operations, there is only one rule you have to remember:
+tensor operations, there is only one rule you have to remember:  
+不幸的是，在我们的C代码中手动追踪引用计数是麻烦的，幸运的是，对于大多数张量操作的实现代码，你只需要记住一条规则
 
 > **Golden Rule of Reference Counting:** You must either FREE or RETURN
 > a pointer which was returned by a function whose name begins with
 > `new` or which you called `retain` on.
-> If you return this pointer, your function name must begin with `new`.
+> If you return this pointer, your function name must begin with `new`.    
+
+> **引用计数黄金法则:** 你必须FREE或者RETURN一个指针，该指针是一个`new`开头的函数返回的
+> 或者你调用了`retain`。如果你返回这个指针，你的函数名必须也用new开头
 
 In a long function, there may be many invocations of functions with `new` in
 their name.  Your responsibility is to go through each of them and ensure
