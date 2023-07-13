@@ -46,6 +46,7 @@ using ConstQuantizerPtr = const c10::intrusive_ptr<Quantizer>&;
 
 // Tensor is a "generic" object holding a pointer to the underlying TensorImpl object, which
 // has an embedded reference count. In this way, Tensor is similar to boost::intrusive_ptr.
+// Tenor 是一个通用的对象，包含指向底层TensorImpl对象的指针，该对象有一个嵌入式引用计数
 //
 // For example:
 //
@@ -68,12 +69,12 @@ using ConstQuantizerPtr = const c10::intrusive_ptr<Quantizer>&;
    Tensor b = a;
    ...
  }
-  在这个例子中，Tensor b = a，创建一个新的对象指向相同的底层TensorImpl，并增加引用计数，当b的作用域结束时，
+  在这个例子中，Tensor b = a，创建一个新的对象指向相同的底层TensorImpl，并增加引用计数，当b出了作用域，
   析构函数通过调用TensorImpl上的release()来减少引用计数
 
   注意：Tensor也可以为NULL，它不会关联任何底层的TensorImpl
 */
-class CAFFE2_API Tensor {
+class CAFFE2_API Tensor {  //CAFFE2_API控制Tensor API的可见性
  public:
   Tensor(){};
   // This constructor should not be used by end users and is an implementation
