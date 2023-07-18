@@ -726,13 +726,18 @@ def trace(func,
     """
     Trace a function and return an executable ``ScriptModule`` or ``torch._C.Function``
     that will be optimized using just-in-time compilation.
+    trace一个函数，并返回一个使用JIT编译优化的可执行ScriptModule或者torch._C.Function
 
     Using ``torch.jit.trace`` and :func:`torch.jit.trace_module<torch.jit.trace_module>`, you can turn an existing module or Python
     function into a TorchScript ``torch._C.Function`` or ``ScriptModule``. You must provide example inputs,
     and we run the function, recording the operations performed on all the tensors.
+    使用torch.jit.trace和:func:`torch.jit.trace_module<torch.jit.trace_module>`，可以将module或者Python函数转换为一个TorchScript
+    torch._C.Function或者ScriptModule。你必须提供输入并且运行该函数，记录在所有tensor上执行的操作
 
     * The resulting recording of a standalone function produces ``torch._C.Function``.
     * The resulting recording of ``forward`` function of ``nn.Module`` or ``nn.Module`` produces ``ScriptModule``.
+    * 一个单独函数的记录结果为torch._C.Function
+    * nn.Module的forward函数记录结果为ScriptModule
 
     This module also contains any parameters that the original
     module had as well.
@@ -747,22 +752,34 @@ def trace(func,
         graph on any input. This has some important implications when your module is
         expected to run different sets of operations, depending on the input and/or the
         module state. For example,
+        trace仅记录不依赖于数据函数和模块（例如，不对张量中的数据设置条件），并且没有任何未追踪的外部依赖性
+        （例如执行输入、输出或者访问外部变量）。trace仅仅记录在给定张量上运行给定函数所完成的操作。因此，返回的
+        ScriptModule在任何输入上将始终运行相同的treace图。当module需要根据输入或者module的状态运行不同的操作集
+        时，这将造成重要的影响，例如
 
         * Tracing will not record any control-flow like if-statements or loops.
           When this control-flow is constant across your module, this is fine and it often
           inlines the control-flow decisions. But sometimes the control-flow is actually part
           of the model itself. For instance, a recurrent network is a loop over
           the (possibly dynamic) length of an input sequence.
+        * trace不会记录任何控制流，像if或loop。 当控制流在module中保持不变时，这很好。
+          但有时控制流是模型的一部分，例如，recurrent network是输入序列长度上的循环
+
         * In the returned ``ScriptModule``, operations that have different
           behaviors in ``training`` and ``eval`` modes will always behave as if it
           is in the mode it was in during tracing, no matter which mode the
           ``ScriptModule`` is in.
+        * 返回的ScriptModule在traning和eval模式下有不同行为的操作，无论在哪种模式下，其行为总是和
+          trace期间的行为相同
 
         In cases like these, tracing would not be appropriate and :func:`scripting <torch.jit.script>` is a better
         choice. If you trace such models, you may silently get
         incorrect results on subsequent invocations of the model. The tracer
         will try to emit warnings when doing something that may cause an
         incorrect trace to be produced.
+        在这些情况下，trace并不合适，:func:`scripting <torch.jit.script>`是一个更好的选择。
+        如果你trace这样的模型，在后续的模型调用中可能得不到正确的结果，
+        当做了可能导致trace错误的事情时，tracer将发出警告。
 
     Arguments:
         func (callable or torch.nn.Module):  a Python function or ``torch.nn.Module``
@@ -770,18 +787,23 @@ def trace(func,
                                              arguments and returns to ``func`` must be tensors
                                              or (possibly nested) tuples that
                                              contain tensors.
+                                            用example_inputs运行的Python函数或者torch.nn.Module，
+                                            func的参数和返回值必须是张量或者是包含张量的元组
+
         example_inputs (tuple):  a tuple of example inputs that will be passed to the function
                                  while tracing. The resulting trace can be run with
                                  inputs of different types and shapes assuming the traced operations
                                  support those types and shapes. ``example_inputs`` may also be a single
                                  Tensor in which case it is automatically wrapped in a tuple
+                                 当trace时，传递给函数的输入元组。example_inputs也可以是一个单个张量，它会自动包装在
+                                 一个tuple中
 
     Keyword arguments:
         check_trace (bool, optional): check if the same inputs run through
                                       traced code produce the same outputs. Default: ``True``. You might want
                                       to disable this if, for example, your network contains non-
                                       deterministic ops or if you are sure that the network is correct despite
-                                      a checker failure.
+                                      a checker failure.                                  
 
         check_inputs (list of tuples, optional): A list of tuples of input arguments that should be used
                                                  to check the trace against what is expected. Each tuple
@@ -790,6 +812,7 @@ def trace(func,
                                                  set of checking inputs representative of the space of
                                                  shapes and types of inputs you expect the network to see.
                                                  If not specified, the original ``example_inputs`` are used for checking
+
         check_tolerance (float, optional): Floating-point comparison tolerance to use in the checker procedure.
                                            This can be used to relax the checker strictness in the event that
                                            results diverge numerically for a known reason, such as operator fusion.
@@ -800,6 +823,9 @@ def trace(func,
         The returned ``ScriptModule`` will have the same set of sub-modules and parameters as the
         original ``nn.Module``.
         If ``callable`` is a standalone function, ``trace`` returns ``torch._C.Function``
+        如果callable是nn.Module的forward()，trace返回一个ScriptModule对象，它有一个包含trace代码的forward()
+        方法。返回的ScriptModule具有和原始的nn.Module相同的子模块和参数
+        如果callable是一个函数，trace返回的是torch._C.Function
 
     Example (tracing a function):
 
@@ -815,6 +841,7 @@ def trace(func,
 
         # `traced_foo` can now be run with the TorchScript interpreter or saved
         # and loaded in a Python-free environment
+        traced_foo现在可以用TorchScript解释器运行，或者在无python的环境中保存和加载
 
     Example (tracing an existing module)::
 
@@ -906,6 +933,8 @@ def trace_module(mod,
     using just-in-time compilation. When a module is passed to :func:`torch.jit.trace <torch.jit.trace>`, only
     the ``forward`` method is run and traced. With ``trace_module``, you can specify a dictionary of
     method names to example inputs to trace (see the ``example_inputs``) argument below.
+    trace一个module并返回一个可执行的ScriptModule，ScriptModule使用JIT进行优化。当module传递到:func:`torch.jit.trace <torch.jit.trace>`
+    仅运行和trace `forward`方法。
 
     See :func:`torch.jit.trace <torch.jit.trace>` for more information on tracing.
 
@@ -913,10 +942,15 @@ def trace_module(mod,
         mod (torch.nn.Module):           a ``torch.nn.Module`` containing methods whose names are
                                          specified in ``example_inputs``. The given methods will be compiled
                                          as a part of a single `ScriptModule`
+                                        包含 ``example_inputs``中指定的方法的torch.nn.Module，指定的方法将被编译为一个
+                                        单独的ScriptModule
+
         example_inputs (dict):           a dict containing sample inputs indexed by method names in ``mod``
                                          The inputs will be passed to methods whose names correspond to inputs'
                                          keys while tracing.
                                          ``{ 'forward' : example_forward_input, 'method2': example_method2_input}``
+                                         字典，包含方法名字以及对应的输入
+
     Keyword arguments:
         check_trace (bool, optional): check if the same inputs run through
                                       traced code produce the same outputs. Default: ``True``. You might want
@@ -1493,6 +1527,11 @@ if _enabled:
         TorchScript functions,  a statically-typed subset of Python that contains all
         of PyTorch's built-in Tensor operations. This difference allows your
         ``ScriptModule``\s code to run without the need for a Python interpreter.
+        TorchScript的核心数据结构是ScriptModule，它类似于nn.Module，以子模块树的形式表示整个模型
+        和普通的module一样，ScriptModule中的每个单独的模块都有子模块、参数和方法。
+        在nn.Module中方法是python函数
+        在ScriptModule中方法是TorchScript函数，TorchScript函数是python静态类型子集，包含所有PyTorch
+        内置的Tensor操作，这种不同允许ScriptModule无需python即可运行
 
         ``ScriptModule``\s should not be created manually, instead use
         either :func:`tracing <torch.jit.trace>` or :func:`scripting <torch.jit.script>`.

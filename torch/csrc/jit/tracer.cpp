@@ -228,7 +228,7 @@ static IValue addInput(const std::shared_ptr<TracingState> & state, const IValue
       input_tensor = input_tensor.view(input_tensor.sizes());
     }
     value->setDebugName(name);
-    //state维持了一个IValue到Value的映射，在这里是把input权重绑定到value上
+    //state维持了一个IValue到Value的映射，在这里是把input绑定到value上
     state->setValue(input_tensor, value);
     return input_tensor;
   } else if (auto tuple_type = type->cast<TupleType>()) {
