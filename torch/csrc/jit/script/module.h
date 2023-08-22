@@ -99,11 +99,14 @@ struct TORCH_API Method {
  private:
   // Methods are uniqued onwed by a single module. This raw pointer allows
   // looking up the module.
+  // 这个raw pointer可以查找module
   ModulePtr owner_;
 
   // Underlying unbound function
   // This is the _lowered_ function and is different than the
   // first-class function in class_compilation_unit()
+  // 底层未绑定的函数
+  // 这是__lowered_函数，与CompilationUnit中的一级函数不同
   Function* function_;
 };
 

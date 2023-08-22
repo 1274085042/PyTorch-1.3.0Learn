@@ -15,6 +15,8 @@ TORCH_API void preoptimizeGraph(std::shared_ptr<Graph>& graph);
 // It contains schema information, and the executor that manages the
 // execution of the function. script::Method is a wrapper around a
 // underlying Function that also provides a `self` object.
+// Function是一个Graph，它包含schema信息，以及管理函数执行的执行器
+// script::Method是Function的一个包装器,它同时提供一个`self`对象
 struct TORCH_API Function {
   Function(
       c10::QualifiedName name,
@@ -119,6 +121,9 @@ struct TORCH_API Function {
   // We're using reentrant mutex so that we don't need to worry about causing a
   // deadlock by calling one method from another (e.g. optimized_graph() from
   // get_executor()).
+  // Functions可以被多个线程调用，因此当我们第一次初始化图执行器或计算优化图时，需要持有此锁
+  // 我们使用reentrant mutex，这样我们就不必担心从一种方法调用另一种方法
+  //（例如，从 get_executor() 调用optimized_graph()）会导致死锁。
   mutable std::recursive_mutex compile_mutex;
 
   GraphExecutor executor_; // for execution
@@ -131,6 +136,7 @@ struct TORCH_API Function {
   // if absent, then we generate a default schema based on the graph
   // mutable because getSchema caches the default schema if one is requested
   // before a call to setSchema
+  // 如果不存在，则会根据图生成一个默认schema，
   mutable std::unique_ptr<FunctionSchema> schema_;
 };
 } // namespace jit
